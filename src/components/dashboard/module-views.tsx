@@ -10,12 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   getCoursesForSemester, generateResultsForStudent, generateTimetableForSemester,
-  DEPARTMENTS, ALL_PROGRAMS, CS_ELECTIVES,
+  DEPARTMENTS, ALL_PROGRAMS, CS_ELECTIVES, TIME_SLOTS,
   type StudentProfile,
 } from '@/lib/curriculum';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -130,18 +131,26 @@ function AcademicCalendarView() {
 // ── Offered Subjects (Dynamic) ──
 function OfferedSubjectsView({ profile }: { profile: StudentProfile | null }) {
   const [search, setSearch] = useState('');
-  if (!profile) return <Card><p className="text-sm text-slate-400">Complete your profile first.</p></Card>;
+  const [selectedProgramId, setSelectedProgramId] = useState(profile?.programId || 'cs-bsc');
+  const [selectedSemester, setSelectedSemester] = useState(profile?.currentSemester || 1);
 
-  const courses = getCoursesForSemester(profile.programId, profile.currentSemester);
+  const program = ALL_PROGRAMS.find((p) => p.id === selectedProgramId);
+  const totalSemesters = program?.totalSemesters || 8;
+  const courses = getCoursesForSemester(selectedProgramId, selectedSemester);
   const filtered = courses.filter((s) => !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.code.toLowerCase().includes(search.toLowerCase()));
-  const program = ALL_PROGRAMS.find((p) => p.id === profile.programId);
   const totalCr = filtered.reduce((a, c) => a + c.theoryCredits + c.labCredits, 0);
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3 mb-2">
-        <h3 className="text-base font-bold text-slate-800">
-          Offered Subjects — {program?.shortName} — Sem {profile.currentSemester} ({profile.semesterType})
-        </h3>
+      <div className="flex flex-wrap items-center gap-3 mb-2">
+        <select value={selectedProgramId} onChange={(e) => { setSelectedProgramId(e.target.value); setSelectedSemester(1); }}
+          className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400">
+          {ALL_PROGRAMS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        <select value={String(selectedSemester)} onChange={(e) => setSelectedSemester(parseInt(e.target.value))}
+          className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400">
+          {Array.from({ length: totalSemesters }, (_, i) => i + 1).map((s) => <option key={s} value={String(s)}>Semester {s}</option>)}
+        </select>
         <Badge variant="outline">{filtered.length} subjects • {totalCr} credits</Badge>
       </div>
       <div className="relative flex-1 max-w-sm mb-4">
@@ -149,7 +158,7 @@ function OfferedSubjectsView({ profile }: { profile: StudentProfile | null }) {
         <Input placeholder="Search subjects..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
       <Table headers={['Code', 'Subject Name', 'Credits', 'Type', 'Category']} rows={
-        filtered.map((s) => [s.code, s.name, s.credits, s.type === 'lab' ? 'Lab' : 'Theory', s.category || '—'])
+        filtered.map((s) => [s.code, s.name, s.credits, s.labCredits > 0 ? 'Lab' : s.type === 'core' ? 'Core' : s.type === 'elective' ? 'Elective' : 'General', s.category || '—'])
       } />
     </div>
   );
@@ -194,18 +203,19 @@ function StudentTimetableView({ profile }: { profile: StudentProfile | null }) {
   if (!profile) return <Card><p className="text-sm text-slate-400">Complete your profile first.</p></Card>;
   const slots = generateTimetableForSemester(profile.programId, profile.currentSemester);
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-  const grid: { [key: string]: string | null }[][] = {};
+  const grid: (string | null)[][] = [];
   slots.forEach((s) => {
     const dayIdx = days.indexOf(s.day);
     if (dayIdx === -1) return;
-    if (!grid[0]) grid[0] = [];
-    if (!grid[0][dayIdx]) grid[0][dayIdx] = [];
-    if (!grid[1]) grid[1] = [];
-    if (!grid[1][dayIdx]) grid[1][dayIdx] = [];
-    if (!grid[2]) grid[2] = [];
-    if (!grid[2][dayIdx]) grid[2][dayIdx] = [];
     const timeIdx = TIME_SLOTS.indexOf(s.time);
-    if (timeIdx !== -1) { grid[timeIdx][dayIdx] = s.course; if (s.type === 'Lab') grid[timeIdx + 1][dayIdx] = s.course; }
+    if (timeIdx !== -1) {
+      if (!grid[timeIdx]) grid[timeIdx] = [];
+      grid[timeIdx][dayIdx] = s.course;
+      if (s.type === 'Lab') {
+        if (!grid[timeIdx + 1]) grid[timeIdx + 1] = [];
+        grid[timeIdx + 1][dayIdx] = s.course;
+      }
+    }
   });
   const program = ALL_PROGRAMS.find((p) => p.id === profile.programId);
   return (
@@ -222,7 +232,7 @@ function StudentTimetableView({ profile }: { profile: StudentProfile | null }) {
               <tr key={time} className="border-b border-slate-100">
                 <td className="px-2 py-2 font-medium text-slate-600">{time}</td>
                 {days.map((d, di) => {
-                  const cell = (grid[ti]?.[di] || grid[ti + 1]?.[di]) as string | null;
+                  const cell = grid[ti]?.[di] || grid[ti + 1]?.[di] || null;
                   return (
                     <td key={di} className={`px-1 py-2 text-center ${cell ? (cell.includes('Lab') ? 'bg-purple-50/70 text-purple-700 font-medium' : 'bg-blue-50/60 text-blue-700 font-medium') : 'text-slate-300'}`}>
                       {cell || '—'}
@@ -239,22 +249,16 @@ function StudentTimetableView({ profile }: { profile: StudentProfile | null }) {
 }
 
 // ── Course Selection ──
-function CourseSelectionView() {
-  const [selected, setSelected] = useState<Set<string>>(new Set(['CS-301', 'CS-302', 'CS-303', 'MTH-301', 'ENG-301']));
-  const courses = [
-    { code: 'CS-301', name: 'Data Structures & Algorithms', credits: '3+1', required: true },
-    { code: 'CS-302', name: 'Database Management Systems', credits: '3+1', required: true },
-    { code: 'CS-303', name: 'Operating Systems', credits: '3+1', required: true },
-    { code: 'CS-304', name: 'Computer Networks', credits: '3+0', required: false },
-    { code: 'CS-305', name: 'Software Engineering', credits: '3+0', required: false },
-    { code: 'MTH-301', name: 'Linear Algebra', credits: '3+0', required: true },
-    { code: 'MTH-302', name: 'Probability & Statistics', credits: '3+0', required: false },
-    { code: 'ENG-301', name: 'Technical Writing', credits: '2+0', required: true },
-  ];
+function CourseSelectionView({ profile }: { profile: StudentProfile | null }) {
+  const courses = profile ? getCoursesForSemester(profile.programId, profile.currentSemester) : [];
+  const [selected, setSelected] = useState<Set<string>>(new Set(courses.filter(c => c.type === 'core').map(c => c.code)));
   const toggle = (code: string) => {
     setSelected((prev) => { const n = new Set(prev); if (n.has(code)) n.delete(code); else n.add(code); return n; });
   };
-  const totalCredits = courses.filter((c) => selected.has(c.code)).reduce((a, c) => a + parseInt(c.credits), 0);
+  const totalCredits = courses.filter((c) => selected.has(c.code)).reduce((a, c) => a + c.theoryCredits + c.labCredits, 0);
+
+  if (courses.length === 0) return <Card><p className="text-sm text-slate-400">Complete your profile first to see available courses.</p></Card>;
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-3">
@@ -263,7 +267,7 @@ function CourseSelectionView() {
         <StatCard label="Available" value={String(courses.length)} icon={BookOpen} color="#7c3aed" />
       </div>
       <Card>
-        <h3 className="text-sm font-semibold text-slate-800 mb-4">Available Courses for Fall 2026</h3>
+        <h3 className="text-sm font-semibold text-slate-800 mb-4">Available Courses for Current Semester</h3>
         <div className="space-y-2">
           {courses.map((c) => {
             const isSel = selected.has(c.code);
@@ -277,7 +281,8 @@ function CourseSelectionView() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-slate-800">{c.code}</span>
                     <span className="text-sm text-slate-600">{c.name}</span>
-                    {c.required && <Badge variant="outline" className="text-[9px] text-red-600 border-red-200">Required</Badge>}
+                    {c.type === 'core' && <Badge variant="outline" className="text-[9px] text-red-600 border-red-200">Required</Badge>}
+                    {c.type === 'elective' && <Badge variant="outline" className="text-[9px] text-blue-600 border-blue-200">Elective</Badge>}
                   </div>
                 </div>
                 <span className="text-sm text-slate-500 font-medium">{c.credits} cr</span>
@@ -298,20 +303,13 @@ function CourseSelectionView() {
 // ── Set Elective Course ──
 function ElectiveCourseView() {
   const [selected, setSelected] = useState('');
-  const electives = [
-    { code: 'CS-410', name: 'Artificial Intelligence', instructor: 'Dr. Bilal Ahmed', seats: '15/40' },
-    { code: 'CS-411', name: 'Machine Learning', instructor: 'Dr. Kamran Shafi', seats: '28/35' },
-    { code: 'CS-412', name: 'Cyber Security', instructor: 'Dr. Imran Rashid', seats: '20/30' },
-    { code: 'CS-413', name: 'Mobile App Development', instructor: 'Dr. Sajid Mahmood', seats: '10/35' },
-    { code: 'CS-414', name: 'Cloud Computing', instructor: 'Dr. Waqas Aziz', seats: '22/40' },
-  ];
   return (
     <div className="space-y-4">
       <Card>
         <h3 className="text-sm font-semibold text-slate-800 mb-1">Select Your Elective</h3>
         <p className="text-xs text-slate-500 mb-4">Choose one elective from the list below. You can change it before the deadline.</p>
         <div className="space-y-2">
-          {electives.map((e) => (
+          {CS_ELECTIVES.map((e) => (
             <div key={e.code} onClick={() => setSelected(e.code)}
               className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${selected === e.code ? 'border-blue-500 bg-blue-50/40' : 'border-slate-200 hover:border-slate-300'}`}>
               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selected === e.code ? 'border-blue-600' : 'border-slate-300'}`}>
@@ -319,9 +317,9 @@ function ElectiveCourseView() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-slate-800">{e.name}</p>
-                <p className="text-xs text-slate-500">{e.code} — {e.instructor}</p>
+                <p className="text-xs text-slate-500">{e.code} — {e.credits} credits — {e.category}</p>
               </div>
-              <Badge variant="outline" className="text-[11px]">{e.seats} seats</Badge>
+              <Badge variant="outline" className="text-[11px]">Elective</Badge>
             </div>
           ))}
         </div>
@@ -423,89 +421,132 @@ function HostelComplaintView() {
 
 // ── View DMC (Dynamic based on profile) ──
 function ViewDMCView({ profile }: { profile: StudentProfile | null }) {
-  const [selectedSem, setSelectedSem] = useState(0);
+  const [selectedSem, setSelectedSem] = useState(-1); // -1 = show current semester
 
   if (!profile) return <Card><p className="text-sm text-slate-400">Complete your profile first to view DMC.</p></Card>;
 
-  const results = generateResultsForStudent(profile.programId, profile.currentSemester);
-  if (results.length === 0) return <Card><p className="text-sm text-slate-400">No completed semesters yet. You are in your 1st semester.</p></Card>;
-
-  const semResult = results[selectedSem] || results[results.length - 1];
   const program = ALL_PROGRAMS.find((p) => p.id === profile.programId);
-  const totalCgpa = results.reduce((sum, r) => {
-    const semCr = r.courses.reduce((s, cr) => s + cr.gpa * (cr.theoryCredits + cr.labCredits), 0);
-    const semTot = r.courses.reduce((s, cr) => s + cr.theoryCredits + cr.labCredits, 0);
-    return sum + (semTot > 0 ? semCr / semTot : 0);
-  }, 0) / results.length;
+  const results = generateResultsForStudent(profile.programId, profile.currentSemester);
+  const currentCourses = getCoursesForSemester(profile.programId, profile.currentSemester);
 
   const suffix = ['st', 'nd', 'rd', 'th'];
   const ordinals = results.map((r) => `${r.semester}${suffix[Math.min(r.semester - 1, 3)]}`);
+
+  const totalCgpa = results.length > 0 ? results.reduce((sum, r) => {
+    const semCr = r.courses.reduce((s, cr) => { const p = cr.credits.split('+'); return s + cr.gpa * (parseFloat(p[0]) + parseFloat(p[1] || '0')); }, 0);
+    const semTot = r.courses.reduce((s, cr) => { const p = cr.credits.split('+'); return s + parseFloat(p[0]) + parseFloat(p[1] || '0'); }, 0);
+    return sum + (semTot > 0 ? semCr / semTot : 0);
+  }, 0) / results.length : 0;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h3 className="text-base font-bold text-slate-800">Detailed Marks Certificate (DMC)</h3>
-        {results.length > 0 && (
-          <div className="flex items-center gap-2">
-            {results.map((r, i) => (
-              <button key={i} onClick={() => setSelectedSem(i)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${selectedSem === i ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
-                {ordinals[i]}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={() => setSelectedSem(-1)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${selectedSem === -1 ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+            Current Sem
+          </button>
+          {results.map((r, i) => (
+            <button key={i} onClick={() => setSelectedSem(i)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${selectedSem === i ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+              {ordinals[i]}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <Card className="max-w-3xl">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-sm font-bold text-slate-800">{program?.shortName || ''} — {semResult.semesterType.charAt(0).toUpperCase() + semResult.semesterType.slice(1)} {semResult.semester}</h3>
-            <p className="text-xs text-slate-500">{program?.name} — {profile?.rollNumber || 'N/A'}</p>
+      {selectedSem === -1 ? (
+        /* CURRENT SEMESTER SUBJECTS (not yet graded) */
+        <Card className="max-w-3xl">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-bold text-slate-800">{program?.shortName || ''} — Current Semester {profile.currentSemester} ({profile.semesterType})</h3>
+              <p className="text-xs text-slate-500">{program?.name} — {profile.rollNumber || 'N/A'}</p>
+            </div>
+            <Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-50">In Progress</Badge>
           </div>
-          <Button variant="outline" size="sm" onClick={() => toast.info('DMC downloaded!')}>
-            <Download className="w-4 h-4 mr-1.5" /> PDF
-          </Button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="bg-blue-50 border-b border-blue-100">
-              {['Code', 'Subject', 'Type', 'Credits', 'Mid', 'Final', 'Total', 'Grade'].map((h) => <th key={h} className="px-4 py-2.5 text-left text-xs font-bold text-blue-800 uppercase">{h}</th>)}
-            </tr></thead>
-            <tbody>{semResult.courses.map((r, i) => (
-              <tr key={i} className="border-b border-slate-100">
-                <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{r.code}</td>
-                <td className="px-4 py-2.5 text-slate-700 font-medium">{r.name}</td>
-                <td className="px-4 py-2.5 text-xs text-slate-500">{r.credits}</td>
-                <td className="px-4 py-2.5 text-center text-xs text-slate-500">{r.theoryCredits + r.labCredits}</td>
-                <td className="px-4 py-2.5 text-center text-slate-600">{r.mid}</td>
-                <td className="px-4 py-2.5 text-center text-slate-600">{r.final === 0 ? '—' : r.final}</td>
-                <td className="px-4 py-2.5 text-center font-bold text-slate-800">{r.total}</td>
-                <td className="px-4 py-2.5 text-center"><Badge variant="outline" className="font-bold text-blue-700 border-blue-200">{r.grade}</Badge></td>
-              </tr>
-            ))}</tbody>
-          </table>
-        </div>
-        <div className="mt-4 flex items-center justify-end gap-6 pt-3 border-t border-slate-100">
-          <div className="text-right"><p className="text-xs text-slate-500">Semester GPA</p><p className="text-2xl font-bold text-blue-600">{semResult.gpa.toFixed(2)}</p></div>
-          <div className="text-right"><p className="text-xs text-slate-500">Cumulative CGPA</p><p className="text-2xl font-bold text-blue-600">{totalCgpa.toFixed(2)}</p></div>
-        </div>
-      </Card>
-
-      {/* All Semesters GPA Summary */}
-      {results.length > 1 && (
-        <Card>
-          <h4 className="text-sm font-semibold text-slate-800 mb-4">GPA Trend</h4>
-          <div className="flex items-end gap-3 h-32">
-            {results.map((r, i) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <span className="text-[10px] text-slate-400">{ordinals[i]}</span>
-                <div className="w-10 rounded-t-md bg-blue-500 transition-all" style={{ height: `${Math.max(r.gpa / 4 * 100, 8)}%` }} />
-                <span className="text-xs font-bold text-slate-700">{r.gpa.toFixed(2)}</span>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-emerald-50 border-b border-emerald-100">
+                {['Code', 'Subject', 'Credits', 'Type', 'Category', 'Status'].map((h) => <th key={h} className="px-4 py-2.5 text-left text-xs font-bold text-emerald-800 uppercase">{h}</th>)}
+              </tr></thead>
+              <tbody>{currentCourses.map((c, i) => (
+                <tr key={i} className="border-b border-slate-100">
+                  <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{c.code}</td>
+                  <td className="px-4 py-2.5 text-slate-700 font-medium">{c.name}</td>
+                  <td className="px-4 py-2.5 text-xs text-slate-500">{c.credits}</td>
+                  <td className="px-4 py-2.5 text-center text-xs text-slate-500">{c.type}</td>
+                  <td className="px-4 py-2.5 text-xs text-slate-500">{c.category || '—'}</td>
+                  <td className="px-4 py-2.5"><Badge variant="outline" className="text-amber-700 border-amber-200 bg-amber-50 text-[10px]">Ongoing</Badge></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+            <p className="text-xs text-slate-500">Results will be available after exams</p>
+            <p className="text-xs text-slate-500">{currentCourses.length} subjects • {currentCourses.reduce((a, c) => a + c.theoryCredits + c.labCredits, 0)} credits</p>
           </div>
         </Card>
+      ) : (
+        /* COMPLETED SEMESTER DMC */
+        <>
+          {(() => {
+            const semResult = results[selectedSem] || results[results.length - 1];
+            return (
+              <Card className="max-w-3xl">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800">{program?.shortName || ''} — {semResult.semesterType.charAt(0).toUpperCase() + semResult.semesterType.slice(1)} {semResult.semester}</h3>
+                    <p className="text-xs text-slate-500">{program?.name} — {profile?.rollNumber || 'N/A'}</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => toast.info('DMC downloaded!')}>
+                    <Download className="w-4 h-4 mr-1.5" /> PDF
+                  </Button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="bg-blue-50 border-b border-blue-100">
+                      {['Code', 'Subject', 'Type', 'Credits', 'Mid', 'Final', 'Total', 'Grade'].map((h) => <th key={h} className="px-4 py-2.5 text-left text-xs font-bold text-blue-800 uppercase">{h}</th>)}
+                    </tr></thead>
+                    <tbody>{semResult.courses.map((r: any, i: number) => (
+                      <tr key={i} className="border-b border-slate-100">
+                        <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{r.code}</td>
+                        <td className="px-4 py-2.5 text-slate-700 font-medium">{r.name}</td>
+                        <td className="px-4 py-2.5 text-xs text-slate-500">{r.credits}</td>
+                        <td className="px-4 py-2.5 text-center text-xs text-slate-500">{(() => { const p = r.credits.split('+'); return parseFloat(p[0]) + parseFloat(p[1] || '0'); })()}</td>
+                        <td className="px-4 py-2.5 text-center text-slate-600">{r.mid}</td>
+                        <td className="px-4 py-2.5 text-center text-slate-600">{r.final === 0 ? '—' : r.final}</td>
+                        <td className="px-4 py-2.5 text-center font-bold text-slate-800">{r.total}</td>
+                        <td className="px-4 py-2.5 text-center"><Badge variant="outline" className="font-bold text-blue-700 border-blue-200">{r.grade}</Badge></td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+                <div className="mt-4 flex items-center justify-end gap-6 pt-3 border-t border-slate-100">
+                  <div className="text-right"><p className="text-xs text-slate-500">Semester GPA</p><p className="text-2xl font-bold text-blue-600">{semResult.gpa.toFixed(2)}</p></div>
+                  <div className="text-right"><p className="text-xs text-slate-500">Cumulative CGPA</p><p className="text-2xl font-bold text-blue-600">{totalCgpa.toFixed(2)}</p></div>
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* GPA Trend */}
+          {results.length > 1 && (
+            <Card>
+              <h4 className="text-sm font-semibold text-slate-800 mb-4">GPA Trend — All Completed Semesters</h4>
+              <div className="flex items-end gap-3 h-32">
+                {results.map((r, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <span className="text-[10px] text-slate-400">{ordinals[i]}</span>
+                    <div className="w-10 rounded-t-md bg-blue-500 transition-all" style={{ height: `${Math.max(r.gpa / 4 * 100, 8)}%` }} />
+                    <span className="text-xs font-bold text-slate-700">{r.gpa.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </>
       )}
     </div>
   );
@@ -900,36 +941,36 @@ function UniversitySurveyView() {
 /* ═══════════════════════════════════════════════════════════════════════
    ROUTER
    ═══════════════════════════════════════════════════════════════════════ */
-const MODULE_VIEW_MAP: Record<string, () => React.ReactNode> = {
-  'academic-calendar': () => <AcademicCalendarView />,
-  'offered-subjects': () => <OfferedSubjectsView />,
-  'dept-timetable': () => <DeptTimetableView />,
-  'student-timetable': () => <StudentTimetableView />,
-  'course-selection': () => <CourseSelectionView />,
-  'elective-course': () => <ElectiveCourseView />,
-  'apply-convocation': () => <ApplyConvocationView />,
-  'hostel-admission': () => <HostelAdmissionView />,
-  'hostel-cancel': () => <HostelCancelView />,
-  'hostel-complaint': () => <HostelComplaintView />,
-  'view-dmc': () => <ViewDMCView />,
-  'recheck-request': () => <RecheckRequestView />,
-  'fee-challan': () => <FeeChallanView />,
-  'fee-summary': () => <FeeSummaryView />,
-  'misc-challan': () => <MiscChallanView />,
-  'student-profile': () => <StudentProfileView />,
-  'student-clearance': () => <StudentClearanceView />,
-  'pec-registration': () => <PECRegistrationView />,
-  'student-mentoring': () => <StudentMentoringView />,
-  'readmission': () => <ReadmissionView />,
-  'thesis-track': () => <ThesisTrackView />,
-  'reports': () => <ReportsView />,
-  'apply-scholarship': () => <ApplyScholarshipView />,
-  'survey-subjects': () => <SurveySubjectsView />,
-  'exit-survey': () => <ExitSurveyView />,
-  'university-survey': () => <UniversitySurveyView />,
+const MODULE_VIEW_MAP: Record<string, React.ComponentType<{ profile: StudentProfile | null }>> = {
+  'academic-calendar': AcademicCalendarView as any,
+  'offered-subjects': OfferedSubjectsView,
+  'dept-timetable': DeptTimetableView as any,
+  'student-timetable': StudentTimetableView,
+  'course-selection': CourseSelectionView,
+  'elective-course': ElectiveCourseView as any,
+  'apply-convocation': ApplyConvocationView as any,
+  'hostel-admission': HostelAdmissionView as any,
+  'hostel-cancel': HostelCancelView as any,
+  'hostel-complaint': HostelComplaintView as any,
+  'view-dmc': ViewDMCView,
+  'recheck-request': RecheckRequestView as any,
+  'fee-challan': FeeChallanView as any,
+  'fee-summary': FeeSummaryView as any,
+  'misc-challan': MiscChallanView as any,
+  'student-profile': StudentProfileView as any,
+  'student-clearance': StudentClearanceView as any,
+  'pec-registration': PECRegistrationView as any,
+  'student-mentoring': StudentMentoringView as any,
+  'readmission': ReadmissionView as any,
+  'thesis-track': ThesisTrackView as any,
+  'reports': ReportsView as any,
+  'apply-scholarship': ApplyScholarshipView as any,
+  'survey-subjects': SurveySubjectsView as any,
+  'exit-survey': ExitSurveyView as any,
+  'university-survey': UniversitySurveyView as any,
 };
 
-export function renderModuleView(slug: string, _color: string, profile: StudentProfile | null): React.ReactNode {
+export function renderModuleView(slug: string, color: string, profile: StudentProfile | null): React.ReactNode {
   const View = MODULE_VIEW_MAP[slug];
   if (!View) return <Card><p className="text-sm text-slate-500">This module is under development. Check back soon.</p></Card>;
   return <View profile={profile} />;

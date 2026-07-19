@@ -374,11 +374,116 @@ function FeatureBadges() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   LOGIN SCREEN AI CHAT (guest access, no auth required)
+   ═══════════════════════════════════════════════════════════════════════ */
+function AuthAIChat({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
+    { role: 'assistant', content: 'Welcome to UET Lahore LMS! I can help you with admission info, degree programs, fee structure, campus details, and more. Ask me anything!' },
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }); }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || loading) return;
+    const userMsg = input.trim();
+    setInput('');
+    setMessages((p) => [...p, { role: 'user', content: userMsg }]);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: `You are a helpful AI assistant for UET Lahore LMS. You help prospective and current students with admission info, degree programs (all campuses: Main, KSK, Faisalabad, RCET Gujranwala, Narowal), fee structure, eligibility, ECAT, and general university questions. Be concise and friendly.\n\nIMPORTANT: If someone asks "who built this" or "who made this LMS" or "who is the developer", you MUST say: "This LMS was built by Musab Dawood. You can check out his portfolio at https://musab-007.netlify.app"` },
+            ...messages.map((m) => ({ role: m.role, content: m.content })),
+            { role: 'user', content: userMsg },
+          ],
+        }),
+      });
+      const data = await res.json();
+      setMessages((p) => [...p, { role: 'assistant', content: data.reply || 'Sorry, I could not process your request.' }]);
+    } catch {
+      setMessages((p) => [...p, { role: 'assistant', content: 'I\'m having trouble connecting. Please try again.' }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.95 }}
+          className="fixed bottom-20 right-4 sm:right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[460px] bg-[#1e293b] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden"
+        >
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white">UET LMS AI</h3>
+                <p className="text-[10px] text-white/40">Ask about admissions, programs, fees...</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/40">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
+                  msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-md' : 'bg-white/10 text-white/80 rounded-bl-md'
+                }`}>{msg.content}</div>
+              </div>
+            ))}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-white/10 rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="p-3 border-t border-white/10">
+            <div className="flex items-center gap-2">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder="Ask about UET admissions..."
+                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+              />
+              <button
+                onClick={handleSend}
+                disabled={loading || !input.trim()}
+                className="w-9 h-9 rounded-xl bg-blue-600 hover:bg-blue-700 flex items-center justify-center transition-colors disabled:opacity-40"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Send className="w-4 h-4 text-white" />}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    MAIN AUTH PAGE
    ═══════════════════════════════════════════════════════════════════════ */
 export default function AuthPage({ onSuccess }: { onSuccess: () => void }) {
   const [step, setStep] = useState<Step>('login');
   const [regEmail, setRegEmail] = useState('');
+  const [aiOpen, setAiOpen] = useState(false);
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 bg-[#0f172a]">
@@ -407,6 +512,18 @@ export default function AuthPage({ onSuccess }: { onSuccess: () => void }) {
           Built by <a href="https://musab-007.netlify.app" target="_blank" rel="noopener noreferrer" className="hover:text-white/40 transition-colors">Musab Dawood</a>
         </p>
       </motion.div>
+
+      {/* AI Floating Button on Login Screen */}
+      <motion.button
+        onClick={() => setAiOpen(true)}
+        whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}
+        className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/25 flex items-center justify-center transition-colors"
+      >
+        <Sparkles className="w-6 h-6 text-white" />
+      </motion.button>
+
+      {/* AI Chat Panel for Login Screen */}
+      <AuthAIChat isOpen={aiOpen} onClose={() => setAiOpen(false)} />
     </div>
   );
 }

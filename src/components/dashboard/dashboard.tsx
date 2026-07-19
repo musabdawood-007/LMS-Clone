@@ -16,7 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'sonner';
 import { renderModuleView } from './module-views';
-import { type StudentProfile, DEPARTMENTS, ALL_PROGRAMS, getProgramById, getCoursesForSemester, generateResultsForStudent } from '@/lib/curriculum';
+import { type StudentProfile, DEPARTMENTS, ALL_PROGRAMS, getProgramById, getCoursesForSemester, generateResultsForStudent, CAMPUSES, getDepartmentsForCampus, type CampusId } from '@/lib/curriculum';
 
 /* ═══════════════════════════════════════════════════════════════════════
    MODULE DATA
@@ -118,14 +118,16 @@ export function findCategoryForModule(slug: string): ModuleCategory | undefined 
    PROFILE SETUP MODAL (first-time users set their department/semester)
    ═══════════════════════════════════════════════════════════════════════ */
 function ProfileSetupModal({ onComplete }: { onComplete: (profile: StudentProfile) => void }) {
-  const [departmentId, setDepartmentId] = useState('cs');
-  const [programId, setProgramId] = useState('cs-bsc');
+  const [campusId, setCampusId] = useState<CampusId>('main');
+  const [departmentId, setDepartmentId] = useState('');
+  const [programId, setProgramId] = useState('');
   const [semester, setSemester] = useState('5');
   const [semesterType, setSemesterType] = useState('fall');
   const [rollNumber, setRollNumber] = useState('2022-CS-001');
   const [saving, setSaving] = useState(false);
 
-  const programs = ALL_PROGRAMS.filter((p) => p.departmentId === departmentId);
+  const campusDepts = getDepartmentsForCampus(campusId);
+  const programs = ALL_PROGRAMS.filter((p) => p.departmentId === departmentId && p.campus === campusId);
 
   const handleSave = async () => {
     setSaving(true);
@@ -160,7 +162,7 @@ function ProfileSetupModal({ onComplete }: { onComplete: (profile: StudentProfil
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-5">
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-5 max-h-[90vh] overflow-y-auto">
         <div className="text-center">
           <div className="w-14 h-14 mx-auto mb-3 rounded-xl bg-blue-50 flex items-center justify-center">
             <GraduationCap className="w-7 h-7 text-blue-600" />
@@ -171,10 +173,19 @@ function ProfileSetupModal({ onComplete }: { onComplete: (profile: StudentProfil
 
         <div className="space-y-4">
           <div>
+            <label className="text-xs font-medium text-slate-600 mb-1 block">Campus</label>
+            <select value={campusId} onChange={(e) => { setCampusId(e.target.value as CampusId); setDepartmentId(''); setProgramId(''); }}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400">
+              {CAMPUSES.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+
+          <div>
             <label className="text-xs font-medium text-slate-600 mb-1 block">Department</label>
             <select value={departmentId} onChange={(e) => { setDepartmentId(e.target.value); setProgramId(''); }}
               className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400">
-              {DEPARTMENTS.map((d) => <option key={d.id} value={d.id}>{d.name} ({d.campus})</option>)}
+              <option value="">Select department...</option>
+              {campusDepts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </div>
 
@@ -582,6 +593,8 @@ function HomeView({ onNavigate, userName, profile }: { onNavigate: (slug: string
     }
   }
 
+  const profileProgram = profile ? getProgramById(profile.programId) : null;
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Welcome Banner */}
@@ -593,7 +606,7 @@ function HomeView({ onNavigate, userName, profile }: { onNavigate: (slug: string
           <div>
             <h1 className="text-xl sm:text-2xl font-bold">Welcome back, {userName}</h1>
             <p className="text-blue-100 mt-1">
-              {profile ? `${profile.departmentName} — ${profile.programName} — Sem ${profile.currentSemester}` : 'Access all your academic modules from the sidebar or browse below.'}
+              {profile ? `${profileProgram ? CAMPUSES.find(c => c.id === profileProgram.campus)?.shortName + ' — ' : ''}${profile.departmentName} — ${profile.programName} — Sem ${profile.currentSemester}` : 'Access all your academic modules from the sidebar or browse below.'}
             </p>
           </div>
         </div>
