@@ -776,7 +776,7 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
   }
 
   return (
-    <div className="h-screen w-screen flex bg-[#f8fafc] text-slate-800 overflow-hidden">
+    <div className="h-screen w-screen flex bg-[#f8fafc] text-slate-800">
       <AnimatePresence>
         {showWelcome && <WelcomeScreen userName={user?.name || 'Student'} onDismiss={() => setShowWelcome(false)} />}
       </AnimatePresence>
@@ -806,7 +806,7 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         <header className="h-[64px] border-b border-slate-200 bg-white flex items-center px-4 sm:px-6 gap-4 shrink-0">
           <button onClick={() => setMobileMenuOpen(true)} className="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-500">
             <Menu className="w-5 h-5" />

@@ -97,7 +97,7 @@ export const CAMPUSES: Campus[] = [
 
 export const DEPARTMENTS: Department[] = [
   /* ── Main Campus ── */
-  { id: 'main-cs', name: 'Computer Science', campus: 'main', degrees: ['BSc Computer Science', 'BSc Software Engineering', 'BSc Computer Engineering'] },
+  { id: 'main-cs', name: 'Computer Science', campus: 'main', degrees: ['BSc Computer Science', 'BSc Software Engineering', 'BSc Computer Engineering', 'BSc Applied Computing'] },
   { id: 'main-ai', name: 'Artificial Intelligence', campus: 'main', degrees: ['BSc Artificial Intelligence'] },
   { id: 'main-ee', name: 'Electrical Engineering', campus: 'main', degrees: ['BSc Electrical Engineering'] },
   { id: 'main-me', name: 'Mechanical Engineering', campus: 'main', degrees: ['BSc Mechanical Engineering'] },
@@ -125,7 +125,7 @@ export const DEPARTMENTS: Department[] = [
   { id: 'main-matsci', name: 'Materials Science', campus: 'main', degrees: ['BSc Materials Science'] },
 
   /* ── KSK Campus ── */
-  { id: 'ksk-cse', name: 'Computer Science & Engineering', campus: 'ksk', degrees: ['BSc Computer Science', 'BSc Software Engineering', 'BSc Computer Engineering', 'BSc Applied Computing'] },
+  { id: 'ksk-cse', name: 'Computer Science & Engineering', campus: 'ksk', degrees: ['BSc Computer Science', 'BSc Software Engineering', 'BSc Computer Engineering'] },
   { id: 'ksk-ee', name: 'Electrical Engineering', campus: 'ksk', degrees: ['BSc Electrical Engineering'] },
   { id: 'ksk-me', name: 'Mechanical Engineering', campus: 'ksk', degrees: ['BSc Mechanical Engineering'] },
   { id: 'ksk-cppe', name: 'Chemical, Polymer & Process Engineering', campus: 'ksk', degrees: ['BSc Chemical Engineering'] },
@@ -662,16 +662,10 @@ export const ALL_PROGRAMS: DegreeProgram[] = [
     })),
   },
   {
-    id: 'ksk-cse-bsc-ac', name: 'BSc Applied Computing', shortName: 'AC',
-    department: 'Computer Science & Engineering', departmentId: 'ksk-cse', campus: 'ksk',
+    id: 'main-cs-bsc-ac', name: 'BSc Applied Computing', shortName: 'AC',
+    department: 'Computer Science', departmentId: 'main-cs', campus: 'main',
     totalSemesters: 8,
-    semesters: CS_SEMESTERS.map((s) => ({
-      ...s,
-      courses: s.courses.map((co) => ({
-        ...co,
-        name: co.name.replace('Computer Science', 'Software Engineering').replace('Computing', 'Software Engineering'),
-      })),
-    })),
+    semesters: CS_SEMESTERS,
   },
 
   // Electrical Engineering — KSK

@@ -267,9 +267,9 @@ function ResetPasswordForm({ email, onGoLogin }: { email: string; onGoLogin: () 
       <form onSubmit={handleReset} className="space-y-4">
         <div className="flex justify-center">
           <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-            <InputOTPGroup><InputOTPSlot index={0} /><InputOTPSlot index={1} /><InputOTPSlot index={2} /></InputOTPGroup>
-            <InputOTPSeparator />
-            <InputOTPGroup><InputOTPSlot index={3} /><InputOTPSlot index={4} /><InputOTPSlot index={5} /></InputOTPGroup>
+            <InputOTPGroup><InputOTPSlot className="!h-12 !w-12 !text-xl !text-white !border-white/20 !bg-white/10 !rounded-lg" index={0} /><InputOTPSlot className="!h-12 !w-12 !text-xl !text-white !border-white/20 !bg-white/10 !rounded-lg" index={1} /><InputOTPSlot className="!h-12 !w-12 !text-xl !text-white !border-white/20 !bg-white/10 !rounded-lg" index={2} /></InputOTPGroup>
+            <InputOTPSeparator className="!text-white/30" />
+            <InputOTPGroup><InputOTPSlot className="!h-12 !w-12 !text-xl !text-white !border-white/20 !bg-white/10 !rounded-lg" index={3} /><InputOTPSlot className="!h-12 !w-12 !text-xl !text-white !border-white/20 !bg-white/10 !rounded-lg" index={4} /><InputOTPSlot className="!h-12 !w-12 !text-xl !text-white !border-white/20 !bg-white/10 !rounded-lg" index={5} /></InputOTPGroup>
           </InputOTP>
         </div>
         <FloatingInput id="new-pass" label="New Password" type="password" icon={Lock} value={newPass} onChange={setNewPass} autoComplete="new-password" />
@@ -316,9 +316,9 @@ function OTPVerification({ email, onSuccess, onGoRegister }: { email: string; on
       <form onSubmit={handleVerify} className="space-y-4">
         <div className="flex justify-center">
           <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-            <InputOTPGroup><InputOTPSlot index={0} /><InputOTPSlot index={1} /><InputOTPSlot index={2} /></InputOTPGroup>
-            <InputOTPSeparator />
-            <InputOTPGroup><InputOTPSlot index={3} /><InputOTPSlot index={4} /><InputOTPSlot index={5} /></InputOTPGroup>
+            <InputOTPGroup><InputOTPSlot className="!h-12 !w-12 !text-xl !text-white !border-white/20 !bg-white/10 !rounded-lg" index={0} /><InputOTPSlot className="!h-12 !w-12 !text-xl !text-white !border-white/20 !bg-white/10 !rounded-lg" index={1} /><InputOTPSlot className="!h-12 !w-12 !text-xl !text-white !border-white/20 !bg-white/10 !rounded-lg" index={2} /></InputOTPGroup>
+            <InputOTPSeparator className="!text-white/30" />
+            <InputOTPGroup><InputOTPSlot className="!h-12 !w-12 !text-xl !text-white !border-white/20 !bg-white/10 !rounded-lg" index={3} /><InputOTPSlot className="!h-12 !w-12 !text-xl !text-white !border-white/20 !bg-white/10 !rounded-lg" index={4} /><InputOTPSlot className="!h-12 !w-12 !text-xl !text-white !border-white/20 !bg-white/10 !rounded-lg" index={5} /></InputOTPGroup>
           </InputOTP>
         </div>
         {error && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-400 text-sm text-center">{error}</motion.p>}
