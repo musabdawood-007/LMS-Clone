@@ -617,11 +617,9 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
     }
   }, []);
 
-  return (
-    if (onboarding) return <OnboardingScreen onComplete={(d) => { setProfile(d); setOnboarding(false); }} />;
-    if (loadingProfile) return <div className="h-screen w-screen flex items-center justify-center bg-[#f8fafc]"><div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" /></div>;
+  if (loadingProfile) return <div className="h-screen w-screen flex items-center justify-center bg-[#f8fafc]"><div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" /></div>;
 
-    return (
+  return (
     <div className="h-screen w-screen flex bg-[#f8fafc] text-slate-800 overflow-hidden">
       <AnimatePresence>
         {showWelcome && <WelcomeScreen userName={user?.name || 'Student'} onDismiss={() => setShowWelcome(false)} />}
