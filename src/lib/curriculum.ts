@@ -480,6 +480,20 @@ export function generateTimetableForSemester(programId: string, semester: number
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   STUDENT PROFILE TYPE (shared between dashboard and module-views)
+   ═══════════════════════════════════════════════════════════════════════ */
+export interface StudentProfile {
+  userId: string;
+  departmentId: string;
+  departmentName: string;
+  programId: string;
+  programName: string;
+  currentSemester: number;
+  semesterType: string;
+  rollNumber: string;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    GETTER FUNCTIONS
    ═══════════════════════════════════════════════════════════════════════ */
 export function getProgramById(id: string): DegreeProgram | undefined {
