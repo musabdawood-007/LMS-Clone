@@ -508,7 +508,12 @@ export default function AuthPage({ onSuccess }: { onSuccess: () => void }) {
           </AnimatePresence>
         </div>
         <FeatureBadges />
-        <p className="text-center mt-6 text-[11px] text-white/20">
+        <p className="text-center mt-6 text-[11px] leading-relaxed text-white/25">
+          Unofficial educational clone — not affiliated with{' '}
+          <a href="https://uet.edu.pk" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 decoration-white/20 hover:text-blue-400 transition-colors">UET Lahore</a>.
+          All names and logos are trademarks of their respective owners.
+        </p>
+        <p className="text-center mt-2 text-[11px] text-white/20">
           Built by <a href="https://musab-007.netlify.app" target="_blank" rel="noopener noreferrer" className="hover:text-white/40 transition-colors">Musab Dawood</a>
         </p>
       </motion.div>
