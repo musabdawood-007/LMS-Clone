@@ -2,58 +2,52 @@
 
 > **Built by [Musab Projects](https://musab-007.netlify.app)** — a project group by Musab Dawood
 
-An AI-powered Learning Management System clone for UET Lahore. A full-featured university student portal with authentication, academic modules, AI chat, and curriculum management for multiple campuses and departments.
-
----
+An AI-powered Learning Management System clone for UET Lahore. It provides a university student portal with authentication, onboarding, academic modules, AI assistance, and curriculum management for multiple campuses.
 
 ## Features
 
-- **Authentication System** — Login, registration, OTP email verification, forgot/reset password
-- **Onboarding Flow** — Select campus, department, degree program, semester, and roll number
-- **7 Module Categories:**
-  - **Academic** — Calendar, offered subjects, timetables, course selection, convocation
-  - **Hostel** — Admission, cancellation, complaints
-  - **Results** — View DMC, recheck requests
-  - **Fees & Challans** — Fee generation, summary, miscellaneous
-  - **Student Services** — Profile, clearance, PEC registration, mentoring
-  - **Scholarship** — Application and tracking
-  - **Surveys** — Course, exit, and university surveys
-- **AI Chat Assistant** — Built-in AI chatbot accessible from dashboard
-- **Multi-Campus Support** — Main (Lahore), KSK, Faisalabad, RCET, Narowal
-- **Comprehensive Curriculum Data** — Full semester-wise course plans for all departments
+- Authentication with registration, OTP email verification, and password reset
+- Onboarding for campus, department, degree, semester, and roll number
+- Academic calendar, offered subjects, timetable, course selection, and convocation modules
+- Hostel admission, cancellation, and complaint workflows
+- Results, DMC, and recheck-request features
+- Fees, challans, fee summaries, and miscellaneous payments
+- Student profile, clearance, PEC registration, and mentoring services
+- Scholarship applications and tracking
+- Course, exit, and university surveys
+- Built-in AI chat assistant
+- Support for Lahore, KSK, Faisalabad, RCET, and Narowal campuses
+- Semester-wise curriculum data for multiple departments
 
-## Tech Stack
+## Tech stack
 
-| Layer | Technology |
+| Area | Technology |
 |---|---|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript |
-| UI | React 19 + shadcn/ui (48 components) |
+| Framework | Next.js 16.1.1 with App Router |
+| Language | TypeScript 5 |
+| UI | React 19, Radix UI, and shadcn/ui patterns |
 | Styling | Tailwind CSS 4 |
-| State | Zustand (auth store with localStorage) |
-| Forms | React Hook Form + Zod |
-| Database | MongoDB + Prisma |
-| Auth | JWT (jose) + bcryptjs + OTP email |
-| Email | Nodemailer (Gmail SMTP) |
-| AI Chat | OpenAI-compatible API (byNara router) |
+| State | Zustand |
+| Forms and validation | React Hook Form and Zod |
+| Database | MongoDB |
+| Authentication | JWT with jose, bcryptjs, and OTP email |
+| Email | Nodemailer |
+| AI chat | OpenAI-compatible API |
 | Charts | Recharts |
-| Animations | Framer Motion |
+| Animation | Framer Motion |
 
-## Quick Start
+## Getting started
 
 ```bash
-# Install dependencies
 npm install
-
-# Start dev server
 npm run dev
 ```
 
-Open http://localhost:3000
+Open [http://localhost:3000](http://localhost:3000).
 
-## Required Environment Variables
+## Environment variables
 
-Create a `.env` file with:
+Create a `.env` file and configure the MongoDB connection, SMTP credentials, AI API key, and JWT secret required by your deployment:
 
 ```env
 MONGODB_URI=mongodb+srv://...
@@ -65,28 +59,28 @@ AI_API_KEY=your-api-key
 JWT_SECRET=your-jwt-secret
 ```
 
-## Scripts
+Never commit environment files or credentials to Git.
+
+## Available scripts
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start dev server |
-| `npm run build` | Production build |
-| `npm run start` | Start production server |
+| `npm run dev` | Start the development server |
+| `npm run build` | Create a production build |
+| `npm run start` | Start the production server |
 | `npm run lint` | Run ESLint |
 
-## Project Structure
+## Project structure
 
-```
+```text
 LMS-Clone/
-├── src/
-│   ├── app/              # Next.js App Router + API routes
-│   │   └── api/          # Auth, AI chat, profile endpoints
-│   ├── components/       # Auth, dashboard, onboarding, UI (48 shadcn/ui)
-│   ├── hooks/            # Custom hooks (mobile detection, toast)
-│   ├── lib/              # Curriculum data, DB, email, utils
-│   └── store/            # Zustand auth store
-├── public/               # Static assets (logos)
-└── prisma/               # MongoDB schema
+├── src/app/              # Pages, layouts, and API routes
+├── src/components/       # Auth, dashboard, onboarding, and UI components
+├── src/hooks/            # Custom React hooks
+├── src/lib/              # Curriculum, database, email, and utilities
+├── src/store/            # Zustand authentication store
+├── public/               # Static assets and logos
+└── prisma/               # Repository database-related files
 ```
 
 ## License
